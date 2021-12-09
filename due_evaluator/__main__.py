@@ -83,6 +83,7 @@ def cli_main(args: argparse.Namespace):
     if args.line_by_line:
         for idx, score in enumerate(evaluators[0].line_by_line()):
             print(f'{idx}: {score}', file=sys.stderr)
+    return prop_str
 
 
 def main() -> None:
