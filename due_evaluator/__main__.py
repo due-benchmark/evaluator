@@ -4,10 +4,19 @@
 import argparse
 import sys
 from typing import Optional, Set
+from collections import UserList
 import json
 
 from due_evaluator.due_evaluator import DueEvaluator
 from due_evaluator.utils import property_scores_to_string
+
+
+class ListWrapper(UserList):
+    """to allow grouping by key appended to the metric name(support for GROUP-ANLS only) """
+    def __contains__(self, key):
+        if key in self.data:
+            return True
+        return key.startswith('GROUP-ANLS')
 
 
 def parse_args():
@@ -29,7 +38,7 @@ def parse_args():
     parser.add_argument(
         '--reference', '-r', type=argparse.FileType('r', encoding='utf-8'), required=True, help='Reference file',
     )
-    parser.add_argument('--metric', '-m', type=str, default='F1', choices=['F1', 'MEAN-F1', 'ANLS', 'WTQ', 'GROUP-ANLS'])
+    parser.add_argument('--metric', '-m', type=str, default='F1', choices=ListWrapper(['F1', 'MEAN-F1', 'ANLS', 'WTQ', 'GROUP-ANLS']))
     parser.add_argument(
         '--return-score',
         default='F1',
