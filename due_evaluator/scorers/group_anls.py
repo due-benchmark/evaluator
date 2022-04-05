@@ -15,6 +15,7 @@ class FuzzyAnnotation:
     key: str
     value: str
     value_variants: List[str] = field(default_factory=list)
+    threshold: float = 0.5
 
     def __eq__(self, other):
         def _is_float(val):
@@ -29,9 +30,9 @@ class FuzzyAnnotation:
                 return float(val == pos)
             return textdistance.levenshtein.normalized_similarity(val, pos)
 
-        def _is_acceptable(val, possible_vals, threshold=.5):
+        def _is_acceptable(val, possible_vals, threshold=self.threshold):
             best_score = max([_comp(val, pos) for pos in possible_vals] + [0.])
-            return best_score >= threshold     
+            return best_score >= threshold
 
         if self.key == other.key:
             if _is_acceptable(other.value, [self.value]):
@@ -44,6 +45,9 @@ class FuzzyAnnotation:
 
 
 class FuzzyFScorer(FScorer):
+    def __init__(self, group_by_key=None):
+        super().__init__(group_by_key)
+
     def flatten_annotations(self, annotations: List[Dict[str, Any]]) -> List[FuzzyAnnotation]:
         flatten_items = []
         for annotation in annotations:
@@ -51,13 +55,15 @@ class FuzzyFScorer(FScorer):
                 flatten_items.append(FuzzyAnnotation(
                     key=annotation['key'],
                     value=value['value'],
-                    value_variants=value['value_variants'] if 'value_variants' in value else []))
+                    value_variants=value['value_variants'] if 'value_variants' in value else [],
+                    threshold=0.5 if self.group_by_key is None else 1.0))
         return flatten_items
 
 
 class GroupAnlsScorer(BaseScorer):
-    def __init__(self):
+    def __init__(self, group_by_key):
         self.__inner_scorer = FuzzyFScorer()
+        self.group_by_key = group_by_key
 
     def pseudo_documents(self, doc: dict) -> List[dict]:
         docs = []
@@ -80,7 +86,7 @@ class GroupAnlsScorer(BaseScorer):
         for o in out_items:
             row = []
             for ri, r in enumerate(ref_items):
-                 fscorer = FuzzyFScorer()
+                 fscorer = FuzzyFScorer(self.group_by_key)
                  fscorer.add(o, r)
                  row.append(1 - fscorer.f_score())
             matrix.append(row)
@@ -89,7 +95,7 @@ class GroupAnlsScorer(BaseScorer):
         best_out = [out_items[i] for i in row_ind]
         best_ref = [ref_items[i] for i in col_ind]
         return (best_out, best_ref)
-    
+
     def pad(self, items: List[dict], target_length: int):
         for _ in range(target_length - len(items)):
             items.append({'name': '', 'annotations': []})

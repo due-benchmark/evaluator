@@ -28,10 +28,11 @@ class Annotation:
 class FScorer(BaseScorer):
     """Corpus level F1 Score evaluator."""
 
-    def __init__(self):
+    def __init__(self, group_by_key=None):
         """Initialize class."""
         self.__precision = []
         self.__recall = []
+        self.group_by_key = group_by_key
 
     @classmethod
     def from_scorers(cls, scorers: List['FScorer']) -> 'FScorer':
@@ -49,7 +50,7 @@ class FScorer(BaseScorer):
             new_scorer.__precision.extend(scorer.__precision)
             new_scorer.__recall.extend(scorer.__recall)
         return new_scorer
-    
+
     def flatten_annotations(self, annotations: List[Dict[str, Any]]) -> List[Annotation]:
         flatten_items = []
         for annotation in annotations:
@@ -59,7 +60,6 @@ class FScorer(BaseScorer):
                     value=value['value'],
                     value_variants=value['value_variants'] if 'value_variants' in value else []))
         return flatten_items
-        
 
     def add(self, out_items: Dict[str, Any], ref_items: Dict[str, Any]):
         """Add more items for computing corpus level scores.
@@ -71,6 +71,10 @@ class FScorer(BaseScorer):
         """
         prediction_annotations = self.flatten_annotations(out_items['annotations'])
         ref_annotations = self.flatten_annotations(ref_items['annotations'])
+
+        if self.group_by_key is not None:
+            prediction_annotations = [el for el in prediction_annotations if el.key == self.group_by_key]
+            ref_annotations = [el for el in ref_annotations if el.key == self.group_by_key]
 
         ref_annotations_copy = ref_annotations.copy()
         indicators = []

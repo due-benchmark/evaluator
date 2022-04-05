@@ -79,8 +79,13 @@ class DueEvaluator:
             scorer = MeanFScorer()
         elif self.metric == 'WTQ':
             scorer = WtqScorer()
-        elif self.metric == 'GROUP-ANLS':
-            scorer = GroupAnlsScorer()
+        elif self.metric.startswith('GROUP-ANLS'):
+            """Expecting key to group by appended to the metric with @"""
+            if '@' in self.metric:
+                group_by_key = self.metric.split('@')[1]
+            else:
+                group_by_key = None
+            scorer = GroupAnlsScorer(group_by_key)
         elif self.metric == 'GEVAL':
             scorer = GevalScorer()
         else:
