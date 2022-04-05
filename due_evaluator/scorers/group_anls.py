@@ -86,7 +86,7 @@ class GroupAnlsScorer(BaseScorer):
         for o in out_items:
             row = []
             for ri, r in enumerate(ref_items):
-                 fscorer = FuzzyFScorer(self.group_by_key)   # group_by_name
+                 fscorer = FuzzyFScorer(self.group_by_key)
                  fscorer.add(o, r)
                  row.append(1 - fscorer.f_score())
             matrix.append(row)
